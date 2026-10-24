@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Upload Dokumen Langsung ke MEGA Drive</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- MEGA JS Library Client-Side -->
+    <script src="https://cdn.jsdelivr.net/npm/megajs@1.3.0/dist/main.browser-umd.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .drop-zone--over {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white p-2 rounded-xl text-red-600 shadow-md">
+                    <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">MEGA Cloud Direct Uploader</h1>
+                    <p class="text-xs text-red-100">Upload Dokumen Langsung dari Browser Tanpa Buka Situs MEGA</p>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <div class="flex bg-red-800/50 p-1 rounded-lg border border-red-500/30 text-sm">
+                <button id="btnTabUpload" onclick="switchTab('upload')" class="px-4 py-1.5 rounded-md font-medium transition bg-white text-red-700 shadow-sm">
+                    <i class="fa-solid fa-file-arrow-up mr-1.5"></i> Form Upload Direct
+                </button>
+                <button id="btnTabSetup" onclick="switchTab('setup')" class="px-4 py-1.5 rounded-md font-medium text-red-100 hover:text-white transition">
+                    <i class="fa-solid fa-key mr-1.5"></i> Hubungkan Akun MEGA
+                </button>
+                <button id="btnTabInfo" onclick="switchTab('info')" class="px-4 py-1.5 rounded-md font-medium text-red-100 hover:text-white transition">
+                    <i class="fa-solid fa-circle-info mr-1.5"></i> Cara Kerja & Keamanan
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+
+        <!-- TAB 1: FORM UPLOAD DIRECT -->
+        <div id="tabUpload" class="space-y-6">
+            
+            <!-- Status Banner -->
+            <div id="statusBanner" class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 text-amber-900 text-sm shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div id="statusIcon" class="w-10 h-10 bg-amber-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 font-bold">
+                        <i class="fa-solid fa-plug-circle-exclamation text-lg"></i>
+                    </div>
+                    <div>
+                        <p id="statusTitle" class="font-bold">Akun MEGA Belum Terhubung</p>
+                        <p id="statusDesc" class="text-xs text-amber-700">Silakan isi Email & Password akun MEGA Anda pada tab Pengaturan agar dokumen bisa terupload secara otomatis.</p>
+                    </div>
+                </div>
+                <button onclick="switchTab('setup')" class="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition">
+                    <i class="fa-solid fa-gear mr-1"></i> Pengaturan Akun
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Left Side: Upload Form (2 Cols) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <i class="fa-regular fa-folder-open text-red-600"></i> Form Upload Dokumen
+                        </h2>
+
+                        <form id="uploadForm" onsubmit="handleDirectUpload(event)" class="space-y-5">
+                            
+                            <!-- Pengirim Info -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Nama Pengirim / Lengkap</label>
+                                    <div class="relative">
+                                        <i class="fa-regular fa-user absolute left-3 top-3 text-slate-400"></i>
+                                        <input type="text" id="senderName" required placeholder="Contoh: Budi Santoso" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Kategori Dokumen</label>
+                                    <div class="relative">
+                                        <i class="fa-solid fa-tag absolute left-3 top-3 text-slate-400"></i>
+                                        <select id="docCategory" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition">
+                                            <option value="Laporan">Laporan Kerja</option>
+                                            <option value="Identitas">KTP / Identitas</option>
+                                            <option value="Keuangan">Kuitansi / Keuangan</option>
+                                            <option value="Tugas">Tugas / Perkuliahan</option>
+                                            <option value="Lainnya">Lainnya</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Catatan Tambahan -->
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Catatan Dokumen (Opsional)</label>
+                                <textarea id="docNotes" rows="2" placeholder="Keterangan tambahan file..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition"></textarea>
+                            </div>
+
+                            <!-- Drag and Drop File Zone -->
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Pilih / Drag Dokumen</label>
+                                <div id="dropZone" onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-slate-300 hover:border-red-500 bg-slate-50 hover:bg-red-50/50 rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[140px]">
+                                    <input type="file" id="fileInput" required class="hidden" onchange="handleFileSelect(event)">
+                                    <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-2">
+                                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                                    </div>
+                                    <p id="fileSelectText" class="text-xs text-slate-600 font-medium">Klik di sini atau seret file dokumen Anda ke sini</p>
+                                    <p id="fileDetailText" class="text-[11px] text-slate-400 mt-1">Mendukung file PDF, DOCX, JPG, PNG, ZIP dll.</p>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar Container (Hidden by default) -->
+                            <div id="progressContainer" class="hidden space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div class="flex justify-between text-xs font-semibold text-slate-700">
+                                    <span id="uploadStatusText"><i class="fa-solid fa-spinner fa-spin text-red-600 mr-1.5"></i> Mengirim dokumen ke MEGA Drive...</span>
+                                    <span id="uploadPercent">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                    <div id="progressBar" class="bg-red-600 h-2.5 rounded-full transition-all duration-200 w-0"></div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" id="btnSubmit" class="w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2 text-base">
+                                <i class="fa-solid fa-upload"></i> Upload Langsung ke MEGA Sekarang
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Side: Sidebar Status & History (1 Col) -->
+                <div class="space-y-6">
+                    
+                    <!-- Account Link Widget -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-server text-red-600"></i> Status Koneksi Drive
+                </h3>
+                
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
+                    <div class="flex justify-between items-center text-slate-500">
+                        <span>Status Login:</span>
+                        <span id="sidebarStatus" class="text-amber-600 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-circle text-[8px]"></i> Belum Terhubung
+                        </span>
+                    </div>
+                    <div class="space-y-1 pt-1 border-t border-slate-200/60">
+                        <label class="block font-semibold text-slate-600">Pilih Folder Target MEGA:</label>
+                        <select id="targetFolderSelect" onchange="handleFolderChange(this)" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="root"> Root / Main Drive</option>
+                        </select>
+                        <p class="text-[10px] text-slate-400">Pilih folder di akun MEGA Anda sebagai tujuan simpan.</p>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-500 pt-1 border-t border-slate-200/60">
+                        <span>Metode Upload:</span>
+                        <span class="font-medium text-slate-700">Direct In-Browser Client</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="fetchMegaFolders()" id="btnRefreshFolders" class="w-1/2 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-rotate text-[11px]"></i> Muat Folder
+                    </button>
+                    <button onclick="switchTab('setup')" class="w-1/2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-gear text-[11px]"></i> Atur Kredensial
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div> <!-- Tentukan Penutup Container Tab Upload -->
+
+    <!-- TAB 2: SETUP KREDENSIAL MEGA -->
+    <div id="tabSetup" class="hidden space-y-6">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-red-600"></i> Pengaturan Akun MEGA Drive
+                </h2>
+                <p class="text-slate-600 text-sm">
+                    Masukkan akun MEGA Anda agar sistem webapp ini bisa langsung mengunggah file ke Drive Anda dari browser tanpa keluar halaman.
+                </p>
+            </div>
+
+            <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Email MEGA</label>
+                        <input type="email" id="megaEmail" placeholder="email@contoh.com" class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Password MEGA</label>
+                        <input type="password" id="megaPassword" placeholder="••••••••" class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button onclick="saveAndTestConnection()" id="btnConnect" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plug"></i> Simpan & Hubungkan Akun
+                    </button>
+                    <button onclick="clearConnection()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> Hapus Kredensial
+                    </button>
+                </div>
+
+                <p class="text-xs text-slate-500">
+                    <i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i>
+                    Data login ini tersimpan di browser lokal Anda sendiri (LocalStorage) dan digunakan langsung untuk mengautentikasi koneksi terenkripsi ke server MEGA.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: CARA KERJA & KEAMANAN -->
+    <div id="tabInfo" class="hidden space-y-6">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900 mb-2">Bagaimana Sistem Upload Direct Ini Bekerja?</h2>
+                <p class="text-slate-600 text-sm">
+                    Aplikasi ini memanfaatkan library client-side resmi <code>megajs</code> yang berjalan langsung di dalam browser pengguna.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div class="w-8 h-8 bg-red-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">1</div>
+                    <h3 class="font-bold text-slate-800 text-sm">Koneksi Langsung Browser</h3>
+                    <p class="text-xs text-slate-600">Browser Anda melakukan handshake dan otentikasi terenkripsi langsung ke server MEGA tanpa membuka situs mega.nz.</p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div class="w-8 h-8 bg-red-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">2</div>
+                    <h3 class="font-bold text-slate-800 text-sm">Upload Stream Multi-Part</h3>
+                    <p class="text-xs text-slate-600">File dokumen diproses dan diunggah langsung dari perangkat pengirim menuju akun penyimpanan MEGA Anda secara real-time.</p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                    <div class="w-8 h-8 bg-red-600 text-white rounded-lg flex items-center justify-center font-bold text-sm">3</div>
+                    <h3 class="font-bold text-slate-800 text-sm">Tersimpan Otomatis</h3>
+                    <p class="text-xs text-slate-600">Setelah upload selesai 100%, file secara otomatis berada di Drive MEGA Anda dengan nama format yang rapi.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </main>
+
+    <!-- Custom Toast / Notification Modal -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 pointer-events-none z-50">
+        <div id="toastIcon" class="text-emerald-400 text-lg">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+            <p id="toastTitle" class="text-sm font-semibold">Sukses</p>
+            <p id="toastMessage" class="text-xs text-slate-300">Konfigurasi berhasil disimpan.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State Storage
+        let selectedFile = null;
+        let megaAccount = null;
+        let selectedFolderNode = null;
+        let megaFolderTree = [];
+
+        window.onload = function() {
+            // Setup Drag and Drop Effects
+            const dropZone = document.getElementById('dropZone');
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('drop-zone--over');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drop-zone--over');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    selectedFile = files[0];
+                    updateFileUI();
+                }
+            });
+
+            // Load Saved Credentials
+            const email = localStorage.getItem('mega_email');
+            const pass = localStorage.getItem('mega_password');
+            if (email && pass) {
+                document.getElementById('megaEmail').value = email;
+                document.getElementById('megaPassword').value = pass;
+                updateConnectionStatus(true, email);
+                fetchMegaFolders();
+            }
+        };
+
+        // Fetch folders from MEGA
+        function fetchMegaFolders() {
+            const email = localStorage.getItem('mega_email');
+            const pass = localStorage.getItem('mega_password');
+
+            if (!email || !pass) return;
+
+            const btnRefresh = document.getElementById('btnRefreshFolders');
+            const folderSelect = document.getElementById('targetFolderSelect');
+            
+            if (btnRefresh) {
+                btnRefresh.disabled = true;
+                btnRefresh.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[11px]"></i> Memuat...';
+            }
+
+            folderSelect.innerHTML = '<option value="root"> Root / Main Drive</option>';
+
+            try {
+                const megaLib = window.mega || (window.megaJS ? window.megaJS : null);
+                if (!megaLib) return;
+
+                const storage = megaLib({
+                    email: email,
+                    password: pass,
+                    autologin: true
+                });
+
+                storage.on('ready', () => {
+                    megaFolderTree = [];
+                    folderSelect.innerHTML = '<option value="root"> Root / Main Drive</option>';
+
+                    // Recursive function to parse folders from MEGA storage
+                    function parseFolders(targetNode, depth = 0) {
+                        if (!targetNode || !targetNode.children) return;
+                        
+                        targetNode.children.forEach(child => {
+                            if (child.directory) {
+                                const indent = '&nbsp;&nbsp;'.repeat(depth) + '📂 ';
+                                megaFolderTree.push({
+                                    id: child.nodeId || child.name,
+                                    name: child.name,
+                                    node: child
+                                });
+
+                                const option = document.createElement('option');
+                                option.value = child.nodeId || child.name;
+                                option.innerHTML = indent + child.name;
+                                folderSelect.appendChild(option);
+
+                                // Recursive call for subfolders
+                                parseFolders(child, depth + 1);
+                            }
+                        });
+                    }
+
+                    parseFolders(storage.root);
+
+                    if (btnRefresh) {
+                        btnRefresh.disabled = false;
+                        btnRefresh.innerHTML = '<i class="fa-solid fa-rotate text-[11px]"></i> Muat Folder';
+                    }
+                    showToast("Folder Diperbarui", "Daftar folder akun MEGA berhasil dimuat!", "success");
+                });
+
+                storage.on('error', (err) => {
+                    if (btnRefresh) {
+                        btnRefresh.disabled = false;
+                        btnRefresh.innerHTML = '<i class="fa-solid fa-rotate text-[11px]"></i> Muat Folder';
+                    }
+                });
+
+            } catch (err) {
+                if (btnRefresh) {
+                    btnRefresh.disabled = false;
+                    btnRefresh.innerHTML = '<i class="fa-solid fa-rotate text-[11px]"></i> Muat Folder';
+                }
+            }
+        }
+
+        function handleFolderChange(selectEl) {
+            const val = selectEl.value;
+            if (val === 'root') {
+                selectedFolderNode = null;
+            } else {
+                const found = megaFolderTree.find(f => f.id === val);
+                selectedFolderNode = found ? found.node : null;
+            }
+        }
+
+        // Switch Tab UI
+        function switchTab(tab) {
+            const uploadTab = document.getElementById('tabUpload');
+            const setupTab = document.getElementById('tabSetup');
+            const infoTab = document.getElementById('tabInfo');
+
+            const btnUpload = document.getElementById('btnTabUpload');
+            const btnSetup = document.getElementById('btnTabSetup');
+            const btnInfo = document.getElementById('btnTabInfo');
+
+            uploadTab.classList.add('hidden');
+            setupTab.classList.add('hidden');
+            infoTab.classList.add('hidden');
+
+            btnUpload.className = "px-4 py-1.5 rounded-md font-medium text-red-100 hover:text-white transition";
+            btnSetup.className = "px-4 py-1.5 rounded-md font-medium text-red-100 hover:text-white transition";
+            btnInfo.className = "px-4 py-1.5 rounded-md font-medium text-red-100 hover:text-white transition";
+
+            if (tab === 'upload') {
+                uploadTab.classList.remove('hidden');
+                btnUpload.className = "px-4 py-1.5 rounded-md font-medium transition bg-white text-red-700 shadow-sm";
+            } else if (tab === 'setup') {
+                setupTab.classList.remove('hidden');
+                btnSetup.className = "px-4 py-1.5 rounded-md font-medium transition bg-white text-red-700 shadow-sm";
+            } else {
+                infoTab.classList.remove('hidden');
+                btnInfo.className = "px-4 py-1.5 rounded-md font-medium transition bg-white text-red-700 shadow-sm";
+            }
+        }
+
+        function handleFileSelect(event) {
+            if (event.target.files.length > 0) {
+                selectedFile = event.target.files[0];
+                updateFileUI();
+            }
+        }
+
+        function updateFileUI() {
+            if (selectedFile) {
+                document.getElementById('fileSelectText').innerHTML = `<span class="text-red-600 font-bold">${selectedFile.name}</span>`;
+                document.getElementById('fileDetailText').innerText = `Ukuran: ${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`;
+            }
+        }
+
+        function saveAndTestConnection() {
+            const email = document.getElementById('megaEmail').value.trim();
+            const pass = document.getElementById('megaPassword').value.trim();
+
+            if (!email || !pass) {
+                showToast("Isi Kredensial", "Masukkan Email dan Password akun MEGA Anda", "warning");
+                return;
+            }
+
+            localStorage.setItem('mega_email', email);
+            localStorage.setItem('mega_password', pass);
+            
+            updateConnectionStatus(true, email);
+            showToast("Tersimpan", "Kredensial MEGA berhasil disimpan di browser!", "success");
+
+            fetchMegaFolders();
+
+            setTimeout(() => {
+                switchTab('upload');
+            }, 800);
+        }
+
+        function clearConnection() {
+            localStorage.removeItem('mega_email');
+            localStorage.removeItem('mega_password');
+            document.getElementById('megaEmail').value = '';
+            document.getElementById('megaPassword').value = '';
+            selectedFolderNode = null;
+            megaFolderTree = [];
+            document.getElementById('targetFolderSelect').innerHTML = '<option value="root"> Root / Main Drive</option>';
+            updateConnectionStatus(false);
+            showToast("Terhapus", "Kredensial MEGA telah dihapus.", "warning");
+        }
+
+        function updateConnectionStatus(isConnected, email = "") {
+            const statusBanner = document.getElementById('statusBanner');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusDesc = document.getElementById('statusDesc');
+            const sidebarStatus = document.getElementById('sidebarStatus');
+
+            if (isConnected) {
+                statusBanner.className = "bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 text-emerald-900 text-sm shadow-sm";
+                statusIcon.className = "w-10 h-10 bg-emerald-600 text-white rounded-lg flex items-center justify-center flex-shrink-0 font-bold";
+                statusIcon.innerHTML = '<i class="fa-solid fa-circle-check text-lg"></i>';
+                statusTitle.innerText = "Akun MEGA Terhubung";
+                statusDesc.innerText = `Siap melakukan upload langsung ke akun: ${email}`;
+
+                sidebarStatus.className = "text-emerald-600 font-semibold flex items-center gap-1";
+                sidebarStatus.innerHTML = '<i class="fa-solid fa-circle text-[8px]"></i> Terhubung & Aktif';
+            } else {
+                statusBanner.className = "bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 text-amber-900 text-sm shadow-sm";
+                statusIcon.className = "w-10 h-10 bg-amber-500 text-white rounded-lg flex items-center justify-center flex-shrink-0 font-bold";
+                statusIcon.innerHTML = '<i class="fa-solid fa-plug-circle-exclamation text-lg"></i>';
+                statusTitle.innerText = "Akun MEGA Belum Terhubung";
+                statusDesc.innerText = "Silakan isi Email & Password akun MEGA Anda pada tab Pengaturan agar dokumen bisa terupload secara otomatis.";
+
+                sidebarStatus.className = "text-amber-600 font-semibold flex items-center gap-1";
+                sidebarStatus.innerHTML = '<i class="fa-solid fa-circle text-[8px]"></i> Belum Terhubung';
+            }
+        }
+
+        // Direct Upload Handler
+        async function handleDirectUpload(event) {
+            event.preventDefault();
+
+            const email = localStorage.getItem('mega_email');
+            const pass = localStorage.getItem('mega_password');
+
+            if (!email || !pass) {
+                showToast("Akun Belum Diatur", "Silakan isi Email & Password MEGA pada tab Pengaturan terlebih dahulu.", "warning");
+                switchTab('setup');
+                return;
+            }
+
+            if (!selectedFile) {
+                showToast("Pilih File", "Silakan pilih dokumen yang akan diunggah.", "warning");
+                return;
+            }
+
+            const sender = document.getElementById('senderName').value;
+            const category = document.getElementById('docCategory').value;
+            const btnSubmit = document.getElementById('btnSubmit');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const uploadPercent = document.getElementById('uploadPercent');
+            const uploadStatusText = document.getElementById('uploadStatusText');
+
+            btnSubmit.disabled = true;
+            btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+            progressContainer.classList.remove('hidden');
+
+            try {
+                uploadStatusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-red-600 mr-1.5"></i> Menghubungkan ke Server MEGA...';
+                progressBar.style.width = '15%';
+                uploadPercent.innerText = '15%';
+
+                // Memeriksa keberadaan library MEGA yang dimuat dari UMD Bundle
+                const megaLib = window.mega || (window.megaJS ? window.megaJS : null);
+                
+                if (!megaLib) {
+                    throw new Error("Library MEGA JS tidak berhasil dimuat dari CDN. Periksa koneksi internet Anda.");
+                }
+
+                // Menggunakan fungsi pembuat / otentikasi resmi mega({ email, password })
+                const storage = megaLib({
+                    email: email,
+                    password: pass,
+                    autologin: true
+                });
+
+                storage.on('ready', () => {
+                    uploadStatusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-red-600 mr-1.5"></i> Mengunggah dokumen...';
+                    progressBar.style.width = '50%';
+                    uploadPercent.innerText = '50%';
+
+                    const formattedFileName = `[${category}]_${sender.replace(/\s+/g, '_')}_${selectedFile.name}`;
+
+                    // Membaca file sebagai ArrayBuffer / Uint8Array
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const fileBuffer = new Uint8Array(e.target.result);
+
+                        // Tentukan target folder upload (subfolder pilihan atau root)
+                        let targetUploadNode = storage.root;
+                        const folderVal = document.getElementById('targetFolderSelect').value;
+                        
+                        if (folderVal !== 'root') {
+                            const targetFolder = megaFolderTree.find(f => f.id === folderVal);
+                            if (targetFolder && targetFolder.node) {
+                                targetUploadNode = targetFolder.node;
+                            }
+                        }
+
+                        // Upload file ke Target Folder di MEGA
+                        targetUploadNode.upload({
+                            name: formattedFileName,
+                            size: fileBuffer.length
+                        }, fileBuffer, (err, uploadedFile) => {
+                            if (err) {
+                                progressContainer.classList.add('hidden');
+                                btnSubmit.disabled = false;
+                                btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+                                showToast("Gagal Upload", err.message || "Gagal mengunggah file ke MEGA", "error");
+                                return;
+                            }
+
+                            progressBar.style.width = '100%';
+                            uploadPercent.innerText = '100%';
+                            uploadStatusText.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> Berhasil Terupload!';
+
+                            addHistoryItem(sender, formattedFileName, category, new Date().toLocaleTimeString());
+                            showToast("Sukses!", "Dokumen berhasil tersimpan di folder MEGA Anda!", "success");
+
+                            setTimeout(() => {
+                                progressContainer.classList.add('hidden');
+                                btnSubmit.disabled = false;
+                                btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+                                document.getElementById('uploadForm').reset();
+                                selectedFile = null;
+                                document.getElementById('fileSelectText').innerText = "Klik di sini atau seret file dokumen Anda ke sini";
+                                document.getElementById('fileDetailText').innerText = "Mendukung file PDF, DOCX, JPG, PNG, ZIP dll.";
+                            }, 1500);
+                        });
+                    };
+                    reader.readAsArrayBuffer(selectedFile);
+                });
+
+                storage.on('error', (err) => {
+                    progressContainer.classList.add('hidden');
+                    btnSubmit.disabled = false;
+                    btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+                    showToast("Gagal Login MEGA", "Periksa kembali Email & Password akun MEGA Anda atau verifikasi 2FA jika aktif.", "error");
+                });
+
+            } catch (err) {
+                progressContainer.classList.add('hidden');
+                btnSubmit.disabled = false;
+                btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+                showToast("Terjadi Kesalahan", err.message, "error");
+            }
+        }
+
+        // Add Upload Item to History Panel
+        function addHistoryItem(sender, filename, category, time) {
+            const historyList = document.getElementById('historyList');
+            const emptyHistory = document.getElementById('emptyHistory');
+
+            if (emptyHistory) {
+                emptyHistory.remove();
+            }
+
+            const item = document.createElement('div');
+            item.className = "p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs transition hover:bg-slate-100/80";
+            item.innerHTML = `
+                <div class="flex justify-between font-semibold text-slate-800">
+                    <span class="truncate pr-2">${sender}</span>
+                    <span class="text-emerald-600 flex-shrink-0"><i class="fa-solid fa-circle-check"></i> Tersimpan</span>
+                </div>
+                <div class="text-slate-600 truncate font-mono text-[11px]">${filename}</div>
+                <div class="flex justify-between text-slate-400 text-[10px]">
+                    <span>Kategori: ${category}</span>
+                    <span>${time}</span>
+                </div>
+            `;
+
+            historyList.prepend(item);
+        }
+
+        function showToast(title, message, type = "success") {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastTitle.innerText = title;
+            toastMessage.innerText = message;
+
+            if (type === 'success') {
+                toastIcon.className = 'text-emerald-400 text-lg';
+                toastIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else if (type === 'warning') {
+                toastIcon.className = 'text-amber-400 text-lg';
+                toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else {
+                toastIcon.className = 'text-red-400 text-lg';
+                toastIcon.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
